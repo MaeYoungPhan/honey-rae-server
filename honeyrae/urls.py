@@ -25,7 +25,7 @@ router.register(r'customers', CustomerView, 'customer')
 
 router.register(r'employees', EmployeeView, 'employee')
 
-router.register(r'serviceTickets', TicketView, 'serviceTicket')
+router.register(r'tickets', TicketView, 'ticket')
 
 urlpatterns = [
     path('register', register_user),

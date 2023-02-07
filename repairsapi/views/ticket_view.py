@@ -4,7 +4,7 @@ from django.http import HttpResponseServerError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers, status
-from repairsapi.models import ServiceTicket
+from repairsapi.models import ServiceTicket, Employee, Customer
 
 class TicketView(ViewSet):
     """Honey Rae API tickets view"""
@@ -32,8 +32,24 @@ class TicketView(ViewSet):
         serialized = TicketSerializer(ticket, context={'request': request})
         return Response(serialized.data, status=status.HTTP_200_OK)
 
+class TicketEmployeeSerializer(serializers.ModelSerializer):
+    """JSON serializer for employee relationship needed for ticket"""
+
+    class Meta:
+        model = Employee
+        fields = ('id', 'specialty', 'full_name')
+
+class TicketCustomerSerializer(serializers.ModelSerializer):
+    """JSON serializer for customer relationship needed for ticket"""
+
+    class Meta:
+        model = Customer
+        fields = ('id', 'address', 'full_name')
+
 class TicketSerializer(serializers.ModelSerializer):
     """JSON serializer for tickets"""
+    employee = TicketEmployeeSerializer(many=False)
+    customer = TicketCustomerSerializer(many=False)
 
     class Meta:
         model = ServiceTicket
