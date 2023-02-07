@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class ServiceTicket(models.Model):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE, related_name='submitted_tickets')
     employee = models.ForeignKey("Employee", null=True, blank=True, on_delete=models.CASCADE, related_name='assigned_tickets')
