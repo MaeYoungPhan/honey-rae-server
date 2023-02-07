@@ -15,12 +15,22 @@ class TicketView(ViewSet):
         Returns:
         Response -- JSON serialized list of tickets
         """
-        if request.auth.user.is_staff:
-            tickets = ServiceTicket.objects.all()
-        else:
-            tickets = ServiceTicket.objects.filter(customer__user=request.auth.user)
+        service_tickets = []
 
-        serialized = TicketSerializer(tickets, many=True)
+        if request.auth.user.is_staff:
+            service_tickets = ServiceTicket.objects.all()
+
+            if "status" in request.query_params:
+                if request.query_params['status'] == "done":
+                    service_tickets = service_tickets.filter(date_completed__isnull=False)
+
+                if request.query_params['status'] == "all":
+                    pass
+
+        else:
+            service_tickets = ServiceTicket.objects.filter(customer__user=request.auth.user)
+
+        serialized = TicketSerializer(service_tickets, many=True)
         return Response(serialized.data, status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
@@ -31,6 +41,51 @@ class TicketView(ViewSet):
         ticket = ServiceTicket.objects.get(pk=pk)
         serialized = TicketSerializer(ticket, context={'request': request})
         return Response(serialized.data, status=status.HTTP_200_OK)
+
+    def create(self, request):
+        """Handle POST requests for service tickets
+        
+        Returns: Response: JSON serialized representation of newly created service ticket"""
+
+        new_ticket = ServiceTicket()
+        new_ticket.customer = Customer.objects.get(user=request.auth.user)
+        new_ticket.description = request.data['description']
+        new_ticket.emergency = request.data['emergency']
+        new_ticket.save()
+
+        serialized = TicketSerializer(new_ticket, many=False)
+
+        return Response(serialized.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
+        """Handles PUT requests for single ticket
+        
+        Returns: Response -- No response body. 204 status code"""
+
+        # Select the target ticket using pk
+        ticket = ServiceTicket.objects.get(pk=pk)
+        # Get the employee id from the client request
+        employee_id = request.data['employee']
+        # Select the employee from teh database using that id
+        assigned_employee = Employee.objects.get(pk=employee_id)
+        # Assign that Employee instance to the employee property of the ticket
+        ticket.employee = assigned_employee
+        # Save the updated ticket
+        ticket.save()
+
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
+    
+    def destroy(self, request, pk=None):
+        """ Handles DELETE requests for service tickets
+        
+        Returns: Response: None with 204 status code"""
+
+        # Find the ticket
+        service_ticket = ServiceTicket.objects.get(pk=pk)
+        #Delete it
+        service_ticket.delete()
+
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
 
 class TicketEmployeeSerializer(serializers.ModelSerializer):
     """JSON serializer for employee relationship needed for ticket"""
